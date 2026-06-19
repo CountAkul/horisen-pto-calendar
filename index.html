@@ -358,7 +358,12 @@ async function toggleDay(key) {
         subject: `${SUBJECT_PREFIX} ${p.name}`,
         type: ACTIVITY_TYPE,
         due_date: key,
-        due_time: '09:00',
+        due_time: (() => {
+          const offset = new Date().getTimezoneOffset();
+          const utcHour = 9 + Math.round(offset / 60);
+          const h = ((utcHour % 24) + 24) % 24;
+          return String(h).padStart(2, '0') + ':00';
+        })(),
         duration: '08:00',
         user_id: p.id
       };
