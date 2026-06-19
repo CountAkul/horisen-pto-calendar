@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HORISEN PTO Calendar</title>
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e2e0d8;
+    --border2: #cccab8;
+    --text: #1a1917;
+    --text2: #6b6960;
+    --text3: #a09f96;
+    --accent: #2563eb;
+    --accent-bg: #eff4ff;
+    --amber: #92400e;
+    --amber-bg: #fffbeb;
+    --amber-border: #fde68a;
+    --success: #166534;
+    --success-bg: #f0fdf4;
+    --danger: #991b1b;
+    --danger-bg: #fef2f2;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* SETUP SCREEN */
+  #setup-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+  .setup-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2.5rem; max-width: 440px; width: 100%; }
+  .setup-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; }
+  .setup-logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .setup-logo-text { font-size: 15px; font-weight: 600; color: var(--text); }
+  .setup-card h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .setup-card p { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 1.5rem; }
+  .setup-card p a { color: var(--accent); }
+  .setup-label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: block; }
+  .setup-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border2); border-radius: var(--radius); font-size: 14px; font-family: monospace; color: var(--text); background: var(--surface); margin-bottom: 1rem; }
+  .setup-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  .setup-btn { width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; }
+  .setup-btn:hover { background: #1d4ed8; }
+  .setup-error { font-size: 13px; color: var(--danger); background: var(--danger-bg); border: 1px solid #fecaca; border-radius: var(--radius); padding: 8px 12px; margin-bottom: 1rem; display: none; }
+  .setup-hint { font-size: 12px; color: var(--text3); margin-top: 1rem; line-height: 1.5; }
+  .setup-hint a { color: var(--text2); }
+
+  /* MAIN APP */
+  #app { display: none; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .logo { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .me-badge { font-size: 12px; color: var(--text2); background: var(--surface2); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); }
+  .signout-btn { font-size: 12px; color: var(--text3); background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: var(--radius); }
+  .signout-btn:hover { color: var(--danger); background: var(--danger-bg); }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  #status-bar { margin-bottom: 1.25rem; padding: 10px 14px; border-radius: var(--radius); font-size: 13px; display: none; border: 1px solid; }
+  #status-bar.info { background: var(--accent-bg); color: var(--accent); border-color: #bfdbfe; display: block; }
+  #status-bar.error { background: var(--danger-bg); color: var(--danger); border-color: #fecaca; display: block; }
+  #status-bar.success { background: var(--success-bg); color: var(--success); border-color: #bbf7d0; display: block; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+  .month-nav { display: flex; align-items: center; gap: 12px; }
+  .month-title { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; min-width: 180px; text-align: center; }
+  .nav-btn { width: 32px; height: 32px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 18px; transition: background 0.1s; }
+  .nav-btn:hover { background: var(--surface2); }
+  .toolbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .bh-label { font-size: 12px; color: var(--text2); }
+  select { font-size: 13px; padding: 6px 10px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--surface); color: var(--text); cursor: pointer; }
+  select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #save-indicator { font-size: 12px; color: var(--text3); min-width: 90px; }
+
+  .team-bar { margin-bottom: 1.25rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .team-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-right: 4px; flex-shrink: 0; }
+  .chip { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px 5px 8px; font-size: 13px; cursor: pointer; background: var(--surface); transition: border-color 0.1s, background 0.1s; user-select: none; }
+  .chip:hover { background: var(--surface2); }
+  .chip.active { border-width: 2px; }
+  .chip.is-me { font-weight: 500; }
+  .chip-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .chip-count { font-size: 11px; color: var(--text3); background: var(--surface2); border-radius: 10px; padding: 1px 6px; margin-left: 2px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; align-items: center; }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+  .leg-swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); }
+  .leg-swatch.bh { background: var(--amber-bg); border-color: var(--amber-border); }
+  .leg-swatch.today { background: var(--accent); border-radius: 50%; border-color: var(--accent); }
+  .leg-swatch.weekend { background: #fafaf8; border-color: var(--border2); }
+  #active-legend { display: none; }
+
+  .layout { display: grid; grid-template-columns: 1fr 220px; gap: 1.5rem; }
+  @media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+
+  .cal-wrapper { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; }
+  .cal-header-row { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .cal-hdr { text-align: center; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); padding: 8px 0; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .day { min-height: 72px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 5px 6px; cursor: pointer; transition: background 0.08s; position: relative; }
+  .day:nth-child(7n) { border-right: none; }
+  .day:hover { background: #f5f4f0; }
+  .day.empty { background: transparent; cursor: default; }
+  .day.empty:hover { background: transparent; }
+  .day.weekend { background: #fafaf8; }
+  .day.weekend:hover { background: #f2f1ec; }
+  .day.bank-hol { background: var(--amber-bg); }
+  .day.bank-hol:hover { background: #fef3c7; }
+  .day-num-wrap { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; margin-bottom: 2px; }
+  .day.today .day-num-wrap { background: var(--accent); border-radius: 50%; }
+  .day.today .day-num { color: #fff; }
+  .day-num { font-size: 12px; font-weight: 500; color: var(--text); }
+  .day.weekend .day-num { color: var(--text3); }
+  .day.today .day-num { color: #fff; }
+  .bh-name { font-size: 9px; color: var(--amber); line-height: 1.2; margin-bottom: 2px; font-weight: 500; }
+  .day-dots { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 2px; }
+  .hdot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-names { font-size: 9px; color: var(--text2); line-height: 1.3; margin-top: 2px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+  .side { display: flex; flex-direction: column; gap: 1rem; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; }
+  .panel-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+  .clist { display: flex; flex-direction: column; gap: 2px; }
+  .citem { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-radius: var(--radius); font-size: 12px; cursor: pointer; color: var(--text2); transition: background 0.1s; }
+  .citem:hover { background: var(--surface2); color: var(--text); }
+  .citem.active { background: var(--surface2); color: var(--text); font-weight: 600; }
+  .citem-count { font-size: 10px; color: var(--text3); }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat { background: var(--surface2); border-radius: var(--radius); padding: 10px; }
+  .stat-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+  .stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+
+  footer { text-align: center; font-size: 11px; color: var(--text3); padding: 2rem 0 1.5rem; }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-logo">
+      <div class="setup-logo-dot"></div>
+      <span class="setup-logo-text">HORISEN PTO Calendar</span>
+    </div>
+    <h1>Connect your Pipedrive account</h1>
+    <p>Enter your personal Pipedrive API token. It will be saved in your browser and never sent anywhere except directly to Pipedrive.</p>
+    <div id="setup-error" class="setup-error"></div>
+    <label class="setup-label" for="token-input">Your Pipedrive API token</label>
+    <input type="password" id="token-input" class="setup-input" placeholder="paste your token here..." autocomplete="off" spellcheck="false" />
+    <button class="setup-btn" id="connect-btn">Connect and open calendar</button>
+    <p class="setup-hint">
+      Find your token in Pipedrive under <strong>Settings &rarr; Personal preferences &rarr; API</strong>.<br>
+      Your token is stored only in this browser. Clear your browser data to remove it.
+    </p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <header>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      HORISEN PTO Calendar
+    </div>
+    <div class="header-right">
+      <span class="me-badge" id="me-badge">Loading...</span>
+      <button class="signout-btn" id="signout-btn" title="Sign out and clear token">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="status-bar"></div>
+
+    <div class="toolbar">
+      <div class="month-nav">
+        <button class="nav-btn" id="prev" aria-label="Previous month">&#8249;</button>
+        <div class="month-title" id="month-title"></div>
+        <button class="nav-btn" id="next" aria-label="Next month">&#8250;</button>
+      </div>
+      <div class="toolbar-right">
+        <span class="bh-label">Bank holidays:</span>
+        <select id="country-sel">
+          <option value="none">None</option>
+          <option value="HR" selected>Croatia</option>
+          <option value="GB">United Kingdom</option>
+          <option value="DE">Germany</option>
+          <option value="FR">France</option>
+          <option value="US">United States</option>
+          <option value="IT">Italy</option>
+          <option value="CH">Switzerland</option>
+          <option value="NL">Netherlands</option>
+        </select>
+        <span id="save-indicator"></span>
+      </div>
+    </div>
+
+    <div class="team-bar" id="team-bar">
+      <span class="team-label">Team</span>
+      <span style="font-size:13px;color:var(--text3);">Loading...</span>
+    </div>
+
+    <div class="legend">
+      <div class="leg-item"><div class="leg-swatch today"></div> Today</div>
+      <div class="leg-item"><div class="leg-swatch bh"></div> Bank holiday</div>
+      <div class="leg-item"><div class="leg-swatch weekend"></div> Weekend</div>
+      <div class="leg-item" id="active-legend">
+        <div class="hdot" id="active-dot" style="width:12px;height:12px;border-radius:3px;"></div>
+        <span id="active-name">Selected</span> (click days to mark)
+      </div>
+    </div>
+
+    <div class="layout">
+      <div>
+        <div class="cal-wrapper">
+          <div class="cal-header-row" id="cal-hdr"></div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+      </div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Bank holidays</div>
+          <div class="clist" id="clist"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">This month</div>
+          <div class="stat-grid">
+            <div class="stat"><div class="stat-label">Bank hols</div><div class="stat-value" id="s-bh">0</div></div>
+            <div class="stat"><div class="stat-label">Team</div><div class="stat-value" id="s-team">0</div></div>
+            <div class="stat"><div class="stat-label">Days off</div><div class="stat-value" id="s-days">0</div></div>
+            <div class="stat"><div class="stat-label">Work days</div><div class="stat-value" id="s-work">0</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>HORISEN &middot; PTO Calendar &middot; Syncs with Pipedrive</footer>
+</div>
+
+<script>
+const STORAGE_KEY = 'horisen_pd_token';
+const COUNTRY_KEY = 'horisen_bh_country';
+const API1 = 'https://api.pipedrive.com/v1';
+const API2 = 'https://api.pipedrive.com/api/v2';
+const SUBJECT_PREFIX = 'Holiday:';
+const COLORS = ['#2563eb','#059669','#db2777','#d97706','#7c3aed','#ea580c','#0891b2','#65a30d','#dc2626','#4338ca','#0369a1','#15803d'];
+
+let TOKEN = '';
+let year = new Date().getFullYear();
+let month = new Date().getMonth();
+let people = [];
+let meId = null;
+let activeId = null;
+let country = localStorage.getItem(COUNTRY_KEY) || 'HR';
+let bankHols = {};
+let activityTypeKey = 'meeting';
+
+function setStatus(msg, type) {
+  const el = document.getElementById('status-bar');
+  el.textContent = msg;
+  el.className = type;
+  if (type === 'success') setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+function setSaving(msg) { document.getElementById('save-indicator').textContent = msg; }
+
+async function apiFetch(path, opts = {}) {
+  const base = path.startsWith('http') ? path : API1 + path;
+  const sep = base.includes('?') ? '&' : '?';
+  const res = await fetch(`${base}${sep}api_token=${TOKEN}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function validateToken(tok) {
+  const res = await fetch(`${API1}/users/me?api_token=${tok}`);
+  if (!res.ok) throw new Error('Invalid token');
+  return res.json();
+}
+
+async function ensureHolidayType() {
+  try {
+    const d = await apiFetch('/activityTypes');
+    if (d.data) {
+      const ex = d.data.find(t => t.name === 'Holiday');
+      if (ex) { activityTypeKey = ex.key_string; return; }
+      const cr = await apiFetch('/activityTypes', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Holiday', icon_key: 'meeting', color: 'f59e0b' })
+      });
+      if (cr.data) activityTypeKey = cr.data.key_string;
+    }
+  } catch (e) { activityTypeKey = 'meeting'; }
+}
+
+async function loadPeople() {
+  setStatus('Loading team from Pipedrive...', 'info');
+  try {
+    await ensureHolidayType();
+    const d = await apiFetch('/users?limit=100');
+    if (!d.data) throw new Error('No data');
+    people = d.data
+      .filter(u => u.active_flag)
+      .map((u, i) => ({ id: u.id, name: u.name, color: COLORS[i % COLORS.length], days: new Map() }));
+    setStatus(`Loaded ${people.length} team members.`, 'success');
+    document.getElementById('s-team').textContent = people.length;
+    activeId = meId;
+    renderTeam();
+    await loadActivities();
+    render();
+  } catch (e) {
+    setStatus('Could not load team from Pipedrive. Check your token.', 'error');
+  }
+}
+
+async function loadActivities() {
+  const pfx = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const first = `${pfx}-01`;
+  const last = `${pfx}-${new Date(year, month + 1, 0).getDate()}`;
+  people.forEach(p => p.days = new Map());
+  for (const p of people) {
+    try {
+      let start = 0;
+      while (true) {
+        const url = `${API1}/activities?user_id=${p.id}&start_date=${first}&end_date=${last}&start=${start}&limit=100&type=${activityTypeKey}&api_token=${TOKEN}`;
+        const res = await fetch(url);
+        if (!res.ok) break;
+        const d = await res.json();
+        if (!d.data) break;
+        d.data.forEach(a => {
+          if (a.subject && a.subject.startsWith(SUBJECT_PREFIX) && a.due_date) {
+            p.days.set(a.due_date, a.id);
+          }
+        });
+        if (!d.additional_data?.pagination?.more_items_in_collection) break;
+        start += 100;
+      }
+    } catch (e) {}
+  }
+}
+
+async function toggleDay(key) {
+  if (!activeId) return;
+  const p = people.find(x => x.id === activeId);
+  if (!p) return;
+
+  if (p.days.has(key)) {
+    const actId = p.days.get(key);
+    if (actId === '__pending__') return;
+    p.days.delete(key);
+    render();
+    setSaving('Removing...');
+    try {
+      await apiFetch(`${API2}/activities/${actId}`, { method: 'DELETE' });
+      setSaving('Removed');
+      setTimeout(() => setSaving(''), 2000);
+    } catch (e) {
+      p.days.set(key, actId);
+      render();
+      setSaving('');
+      setStatus('Could not remove from Pipedrive.', 'error');
+    }
+  } else {
+    p.days.set(key, '__pending__');
+    render();
+    setSaving('Saving...');
+    try {
+      const body = {
+        subject: `${SUBJECT_PREFIX} ${p.name}`,
+        type: activityTypeKey,
+        due_date: key,
+        user_id: p.id,
+        done: 1,
+        note: 'Marked via HORISEN PTO Calendar'
+      };
+      const res = await apiFetch(`${API2}/activities`, { method: 'POST', body: JSON.stringify(body) });
+      if (res.data?.id) p.days.set(key, res.data.id);
+      else p.days.set(key, '__saved__');
+      render();
+      setSaving('Saved to Pipedrive');
+      setTimeout(() => setSaving(''), 2500);
+    } catch (e) {
+      p.days.delete(key);
+      render();
+      setSaving('');
+      setStatus('Could not save to Pipedrive. You can only mark holidays for your own account.', 'error');
+    }
+  }
+}
+
+function getEaster(y) {
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  return new Date(y, Math.floor((h+l-7*m+114)/31)-1, ((h+l-7*m+114)%31)+1);
+}
+function addD(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function fmtD(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+const BH_DATA = {
+  HR: { name:'Croatia', fixed:{'01-01':'Nova godina','01-06':'Bogojavljenje','05-01':'Praznik rada','05-30':'Dan državnosti','06-22':'Dan antifašizma','08-05':'Dan domovine','08-15':'Velika Gospa','11-01':'Svi sveti','11-18':'Dan sjećanja','12-25':'Božić','12-26':'Sv. Stjepan'}, easter:true },
+  GB: { name:'United Kingdom', fixed:{'01-01':'New Year\'s Day','12-25':'Christmas Day','12-26':'Boxing Day'}, easter:true, easterMon:true, mayBH:true, springBH:true, summerBH:true },
+  DE: { name:'Germany', fixed:{'01-01':'Neujahr','05-01':'Tag der Arbeit','10-03':'Deutsche Einheit','12-25':'1. Weihnachtstag','12-26':'2. Weihnachtstag'}, easter:true, easterMon:true, ascension:true, whit:true },
+  FR: { name:'France', fixed:{'01-01':'Jour de l\'An','05-01':'Fête du Travail','05-08':'Victoire 1945','07-14':'Fête Nationale','08-15':'Assomption','11-01':'Toussaint','11-11':'Armistice','12-25':'Noël'}, easter:true, easterMon:true, ascension:true, whit:true },
+  US: { name:'United States', fixed:{'01-01':'New Year\'s Day','07-04':'Independence Day','11-11':'Veterans Day','12-25':'Christmas Day'}, mlk:true, presidents:true, memorial:true, labor:true, thanksgiving:true },
+  IT: { name:'Italy', fixed:{'01-01':'Capodanno','01-06':'Epifania','04-25':'Liberazione','05-01':'Festa del Lavoro','06-02':'Repubblica','08-15':'Ferragosto','11-01':'Ognissanti','12-08':'Immacolata','12-25':'Natale','12-26':'S. Stefano'}, easter:true, easterMon:true },
+  CH: { name:'Switzerland', fixed:{'01-01':'Neujahr','01-02':'Berchtoldstag','08-01':'Nationalfeiertag','12-25':'Weihnachten','12-26':'Stephanstag'}, easter:true, easterMon:true, ascension:true, whit:true },
+  NL: { name:'Netherlands', fixed:{'01-01':'Nieuwjaarsdag','04-27':'Koningsdag','05-05':'Bevrijdingsdag','12-25':'1e Kerstdag','12-26':'2e Kerstdag'}, easter:true, easterMon:true, ascension:true, whit:true }
+};
+
+function calcBH(code, y) {
+  if (code === 'none') return {};
+  const c = BH_DATA[code]; if (!c) return {};
+  const res = {};
+  Object.entries(c.fixed).forEach(([md, lbl]) => { res[`${y}-${md}`] = lbl; });
+  if (c.easter) {
+    const e = getEaster(y);
+    res[fmtD(addD(e, -2))] = 'Good Friday';
+    if (c.easterMon) res[fmtD(addD(e, 1))] = 'Easter Monday';
+    if (c.ascension) res[fmtD(addD(e, 39))] = 'Ascension';
+    if (c.whit) res[fmtD(addD(e, 49))] = 'Whit Sunday';
+  }
+  if (code === 'GB') {
+    const fm = (m) => { const d = new Date(y,m,1); return new Date(y,m,1+(8-d.getDay())%7); };
+    const lm = (m) => { const l = new Date(y,m+1,0); return new Date(y,m+1,-(l.getDay()||7)+1); };
+    res[fmtD(fm(4))] = 'Early May BH';
+    res[fmtD(lm(4))] = 'Spring BH';
+    res[fmtD(lm(7))] = 'Summer BH';
+  }
+  if (code === 'US') {
+    const nm = (m,n) => { const d=new Date(y,m,1); return new Date(y,m,1+(8-d.getDay())%7+(n-1)*7); };
+    const lm = (m) => { const l=new Date(y,m+1,0); return new Date(y,m+1,-(l.getDay()||7)+1); };
+    const nt = (m,n) => { const d=new Date(y,m,1); const o=d.getDay()<=4?(4-d.getDay()):(11-d.getDay()); return new Date(y,m,1+o+(n-1)*7); };
+    res[fmtD(nm(0,3))]='MLK Day'; res[fmtD(nm(1,3))]='Presidents\' Day';
+    res[fmtD(lm(4))]='Memorial Day'; res[fmtD(nm(8,1))]='Labor Day';
+    res[fmtD(nm(9,2))]='Columbus Day'; res[fmtD(nt(10,4))]='Thanksgiving';
+  }
+  return res;
+}
+
+function dk(y, m, d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+
+function renderTeam() {
+  const bar = document.getElementById('team-bar');
+  const leg = document.getElementById('active-legend');
+  if (!people.length) { bar.innerHTML = '<span class="team-label">Team</span><span style="font-size:13px;color:var(--text3)">No team data</span>'; return; }
+  const active = people.find(p => p.id === activeId);
+  if (active) {
+    document.getElementById('active-dot').style.background = active.color;
+    document.getElementById('active-name').textContent = active.name;
+    leg.style.display = 'flex';
+  } else {
+    leg.style.display = 'none';
+  }
+  const pfx = `${year}-${String(month+1).padStart(2,'0')}`;
+  bar.innerHTML = '<span class="team-label">Team</span>' + people.map(p => {
+    const on = p.id === activeId;
+    const isMe = p.id === meId;
+    const cnt = [...p.days.keys()].filter(k => k.startsWith(pfx)).length;
+    return `<div class="chip${on?' active':''}${isMe?' is-me':''}" style="${on?`border-color:${p.color};`:''}" data-pid="${p.id}">
+      <div class="chip-dot" style="background:${p.color}"></div>
+      <span>${p.name}${isMe ? ' (me)' : ''}</span>
+      ${cnt > 0 ? `<span class="chip-count">${cnt}</span>` : ''}
+    </div>`;
+  }).join('');
+  bar.querySelectorAll('.chip').forEach(el => {
+    el.addEventListener('click', () => {
+      const pid = parseInt(el.dataset.pid);
+      activeId = activeId === pid ? null : pid;
+      renderTeam();
+    });
+  });
+}
+
+function renderSidepanel() {
+  const pfx = `${year}-${String(month+1).padStart(2,'0')}`;
+  document.getElementById('clist').innerHTML =
+    `<div class="citem${country==='none'?' active':''}" data-c="none"><span>None</span></div>` +
+    Object.entries(BH_DATA).map(([code, c]) => {
+      const cnt = Object.keys(calcBH(code, year)).filter(k => k.startsWith(pfx)).length;
+      return `<div class="citem${country===code?' active':''}" data-c="${code}">
+        <span>${c.name}</span>
+        ${cnt > 0 ? `<span class="citem-count">${cnt}</span>` : ''}
+      </div>`;
+    }).join('');
+  document.getElementById('clist').querySelectorAll('.citem').forEach(el => {
+    el.addEventListener('click', () => setCountry(el.dataset.c));
+  });
+  let totalDays = 0;
+  people.forEach(p => { p.days.forEach((_, k) => { if (k.startsWith(pfx)) totalDays++; }); });
+  const dim = new Date(year, month+1, 0).getDate();
+  let workDays = 0;
+  for (let d = 1; d <= dim; d++) { const w = new Date(year,month,d).getDay(); if (w!==0&&w!==6) workDays++; }
+  document.getElementById('s-bh').textContent = Object.keys(bankHols).filter(k=>k.startsWith(pfx)).length;
+  document.getElementById('s-team').textContent = people.length;
+  document.getElementById('s-days').textContent = totalDays;
+  document.getElementById('s-work').textContent = workDays;
+}
+
+function render() {
+  bankHols = calcBH(country, year);
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('month-title').textContent = `${MONTHS[month]} ${year}`;
+  document.getElementById('cal-hdr').innerHTML = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `<div class="cal-hdr">${d}</div>`).join('');
+  const firstDay = new Date(year, month, 1);
+  let startDow = firstDay.getDay(); startDow = startDow===0?6:startDow-1;
+  const dim = new Date(year, month+1, 0).getDate();
+  const today = new Date();
+  let cells = [];
+  for (let i = 0; i < startDow; i++) cells.push('<div class="day empty"></div>');
+  for (let d = 1; d <= dim; d++) {
+    const key = dk(year, month, d);
+    const wd = new Date(year, month, d).getDay();
+    const isW = wd===0||wd===6;
+    const isT = today.getFullYear()===year&&today.getMonth()===month&&today.getDate()===d;
+    const isBH = key in bankHols;
+    const cls = 'day' + (isW&&!isBH?' weekend':'') + (isBH?' bank-hol':'') + (isT?' today':'');
+    const dots = people.map(p => p.days.has(key) ? `<div class="hdot" style="background:${p.color}" title="${p.name}"></div>` : '').join('');
+    const names = people.filter(p => p.days.has(key)).map(p => p.name.split(' ')[0]).join(', ');
+    cells.push(`<div class="${cls}" data-key="${key}">
+      <div class="day-num-wrap"><span class="day-num">${d}</span></div>
+      ${isBH ? `<div class="bh-name">${bankHols[key]}</div>` : ''}
+      <div class="day-dots">${dots}</div>
+      ${names ? `<div class="dot-names">${names}</div>` : ''}
+    </div>`);
+  }
+  document.getElementById('cal-grid').innerHTML = cells.join('');
+  document.getElementById('cal-grid').querySelectorAll('.day:not(.empty)').forEach(el => {
+    el.addEventListener('click', () => { if (activeId) toggleDay(el.dataset.key); });
+  });
+  renderTeam();
+  renderSidepanel();
+}
+
+function setCountry(c) {
+  country = c;
+  localStorage.setItem(COUNTRY_KEY, c);
+  document.getElementById('country-sel').value = c;
+  render();
+}
+
+async function init(tok) {
+  TOKEN = tok;
+  try {
+    setStatus('Verifying token...', 'info');
+    const me = await validateToken(tok);
+    if (!me.data) throw new Error('Bad response');
+    meId = me.data.id;
+    localStorage.setItem(STORAGE_KEY, tok);
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('me-badge').textContent = me.data.name;
+    await loadPeople();
+  } catch (e) {
+    TOKEN = '';
+    throw e;
+  }
+}
+
+document.getElementById('connect-btn').addEventListener('click', async () => {
+  const tok = document.getElementById('token-input').value.trim();
+  const errEl = document.getElementById('setup-error');
+  errEl.style.display = 'none';
+  if (!tok) { errEl.textContent = 'Please paste your API token.'; errEl.style.display = 'block'; return; }
+  document.getElementById('connect-btn').textContent = 'Connecting...';
+  document.getElementById('connect-btn').disabled = true;
+  try {
+    await init(tok);
+  } catch (e) {
+    errEl.textContent = 'Could not connect. Check that you pasted the correct token from Pipedrive.';
+    errEl.style.display = 'block';
+    document.getElementById('connect-btn').textContent = 'Connect and open calendar';
+    document.getElementById('connect-btn').disabled = false;
+  }
+});
+
+document.getElementById('token-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('connect-btn').click();
+});
+
+document.getElementById('signout-btn').addEventListener('click', () => {
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+});
+
+document.getElementById('prev').addEventListener('click', async () => {
+  month--; if (month < 0) { month = 11; year--; }
+  render(); setSaving('Loading...'); await loadActivities(); render(); setSaving('');
+});
+document.getElementById('next').addEventListener('click', async () => {
+  month++; if (month > 11) { month = 0; year++; }
+  render(); setSaving('Loading...'); await loadActivities(); render(); setSaving('');
+});
+document.getElementById('country-sel').addEventListener('change', function() { setCountry(this.value); });
+
+const saved = localStorage.getItem(STORAGE_KEY);
+if (saved) {
+  init(saved).catch(() => {
+    localStorage.removeItem(STORAGE_KEY);
+  });
+}
+</script>
+</body>
+</html>
