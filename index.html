@@ -256,6 +256,7 @@ let activeId = null;
 let country = localStorage.getItem(COUNTRY_KEY) || 'HR';
 let bankHols = {};
 let activityTypeKey = 'meeting';
+let activityTypeId = null;
 
 function setStatus(msg, type) {
   const el = document.getElementById('status-bar');
@@ -287,14 +288,14 @@ async function ensureHolidayType() {
     const d = await apiFetch('/activityTypes');
     if (d.data) {
       const ex = d.data.find(t => t.name === 'Holiday');
-      if (ex) { activityTypeKey = ex.key_string; return; }
+      if (ex) { activityTypeKey = ex.key_string; activityTypeId = ex.id; return; }
       const cr = await apiFetch('/activityTypes', {
         method: 'POST',
         body: JSON.stringify({ name: 'Holiday', icon_key: 'meeting', color: 'f59e0b' })
       });
-      if (cr.data) activityTypeKey = cr.data.key_string;
+      if (cr.data) { activityTypeKey = cr.data.key_string; activityTypeId = cr.data.id; }
     }
-  } catch (e) { activityTypeKey = 'meeting'; }
+  } catch (e) { activityTypeKey = 'meeting'; activityTypeId = null; }
 }
 
 async function loadPeople() {
@@ -355,7 +356,7 @@ async function toggleDay(key) {
     render();
     setSaving('Removing...');
     try {
-      await apiFetch(`${API2}/activities/${actId}`, { method: 'DELETE' });
+      await apiFetch(`/activities/${actId}`, { method: 'DELETE' });
       setSaving('Removed');
       setTimeout(() => setSaving(''), 2000);
     } catch (e) {
@@ -377,7 +378,8 @@ async function toggleDay(key) {
         done: 1,
         note: 'Marked via HORISEN PTO Calendar'
       };
-      const res = await apiFetch(`${API2}/activities`, { method: 'POST', body: JSON.stringify(body) });
+      if (activityTypeId) body.activity_type_id = activityTypeId;
+      const res = await apiFetch('/activities', { method: 'POST', body: JSON.stringify(body) });
       if (res.data?.id) p.days.set(key, res.data.id);
       else p.days.set(key, '__saved__');
       render();
