@@ -358,6 +358,8 @@ async function toggleDay(key) {
         subject: `${SUBJECT_PREFIX} ${p.name}`,
         type: ACTIVITY_TYPE,
         due_date: key,
+        due_time: '09:00',
+        duration: '08:00',
         user_id: p.id
       };
       const res = await apiFetch('/activities', { method: 'POST', body: JSON.stringify(body) });
