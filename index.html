@@ -255,8 +255,7 @@ let meId = null;
 let activeId = null;
 let country = localStorage.getItem(COUNTRY_KEY) || 'HR';
 let bankHols = {};
-let activityTypeKey = 'meeting';
-let activityTypeId = null;
+const ACTIVITY_TYPE = 'off';
 
 function setStatus(msg, type) {
   const el = document.getElementById('status-bar');
@@ -283,25 +282,10 @@ async function validateToken(tok) {
   return res.json();
 }
 
-async function ensureHolidayType() {
-  try {
-    const d = await apiFetch('/activityTypes');
-    if (d.data) {
-      const ex = d.data.find(t => t.name === 'Holiday');
-      if (ex) { activityTypeKey = ex.key_string; activityTypeId = ex.id; return; }
-      const cr = await apiFetch('/activityTypes', {
-        method: 'POST',
-        body: JSON.stringify({ name: 'Holiday', icon_key: 'meeting', color: 'f59e0b' })
-      });
-      if (cr.data) { activityTypeKey = cr.data.key_string; activityTypeId = cr.data.id; }
-    }
-  } catch (e) { activityTypeKey = 'meeting'; activityTypeId = null; }
-}
 
 async function loadPeople() {
   setStatus('Loading team from Pipedrive...', 'info');
   try {
-    await ensureHolidayType();
     const d = await apiFetch('/users?limit=100');
     if (!d.data) throw new Error('No data');
     people = d.data
@@ -327,7 +311,7 @@ async function loadActivities() {
     try {
       let start = 0;
       while (true) {
-        const url = `${API1}/activities?user_id=${p.id}&start_date=${first}&end_date=${last}&start=${start}&limit=100&type=${activityTypeKey}&api_token=${TOKEN}`;
+        const url = `${API1}/activities?user_id=${p.id}&start_date=${first}&end_date=${last}&start=${start}&limit=100&type=${ACTIVITY_TYPE}&api_token=${TOKEN}`;
         const res = await fetch(url);
         if (!res.ok) break;
         const d = await res.json();
@@ -372,24 +356,25 @@ async function toggleDay(key) {
     try {
       const body = {
         subject: `${SUBJECT_PREFIX} ${p.name}`,
-        type: activityTypeKey,
+        type: ACTIVITY_TYPE,
         due_date: key,
-        user_id: p.id,
-        done: 1,
-        note: 'Marked via HORISEN PTO Calendar'
+        user_id: p.id
       };
-      if (activityTypeId) body.activity_type_id = activityTypeId;
       const res = await apiFetch('/activities', { method: 'POST', body: JSON.stringify(body) });
-      if (res.data?.id) p.days.set(key, res.data.id);
-      else p.days.set(key, '__saved__');
+      if (res.data?.id) {
+        p.days.set(key, res.data.id);
+      } else {
+        p.days.set(key, '__saved__');
+      }
       render();
       setSaving('Saved to Pipedrive');
       setTimeout(() => setSaving(''), 2500);
     } catch (e) {
+      console.error('Activity POST failed:', e);
       p.days.delete(key);
       render();
       setSaving('');
-      setStatus('Could not save to Pipedrive. You can only mark holidays for your own account.', 'error');
+      setStatus('Could not save to Pipedrive. Check your API token.', 'error');
     }
   }
 }
