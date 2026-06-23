@@ -302,6 +302,7 @@ let activeId = null;
 let country = localStorage.getItem(COUNTRY_KEY) || 'HR';
 let bankHols = {};
 const ACTIVITY_TYPE = 'off';
+const BH_TYPE = 'national_holiday';
 
 function setStatus(msg, type) {
   const el = document.getElementById('status-bar');
@@ -700,18 +701,18 @@ document.getElementById('sync-go').addEventListener('click', async () => {
   const statusEl = document.getElementById('sync-status');
   let created = 0, skipped = 0, failed = 0;
 
-  // Get existing activities for this year to avoid duplicates
+  // Get existing national_holiday activities for this year to avoid duplicates
   const existing = new Set();
   try {
     const first = `${syncYear}-01-01`, last = `${syncYear}-12-31`;
     let start = 0;
     while (true) {
-      const url = `${API1}/activities?start_date=${first}&end_date=${last}&start=${start}&limit=100&type=${ACTIVITY_TYPE}&api_token=${TOKEN}`;
+      const url = `${API1}/activities?start_date=${first}&end_date=${last}&start=${start}&limit=100&type=${BH_TYPE}&api_token=${TOKEN}`;
       const res = await fetch(url);
       if (!res.ok) break;
       const d = await res.json();
       if (!d.data) break;
-      d.data.forEach(a => { if (a.subject && a.subject.startsWith('BH:') && a.due_date) existing.add(a.due_date + '|' + a.subject); });
+      d.data.forEach(a => { if (a.due_date) existing.add(a.due_date + '|' + (a.subject || '')); });
       if (!d.additional_data?.pagination?.more_items_in_collection) break;
       start += 100;
     }
@@ -719,12 +720,12 @@ document.getElementById('sync-go').addEventListener('click', async () => {
 
   for (let i = 0; i < dates.length; i++) {
     const [date, label] = dates[i];
-    const subject = `BH: ${label}`;
+    // subject is just label, no prefix needed
     const pct = Math.round(((i + 1) / dates.length) * 100);
     bar.style.width = pct + '%';
     statusEl.textContent = `${i + 1} of ${dates.length}: ${label}`;
 
-    if (existing.has(date + '|' + subject)) { skipped++; continue; }
+    if (existing.has(date + '|' + label)) { skipped++; continue; }
 
     try {
       const offset = new Date().getTimezoneOffset();
@@ -733,7 +734,7 @@ document.getElementById('sync-go').addEventListener('click', async () => {
       const due_time = String(h).padStart(2, '0') + ':00';
       await apiFetch('/activities', {
         method: 'POST',
-        body: JSON.stringify({ subject, type: ACTIVITY_TYPE, due_date: date, due_time, duration: '08:00', done: 1 })
+        body: JSON.stringify({ subject: label, type: BH_TYPE, due_date: date, due_time, duration: '08:00', done: 1 })
       });
       created++;
     } catch(e) { failed++; }
