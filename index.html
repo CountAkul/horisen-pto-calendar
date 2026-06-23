@@ -291,10 +291,7 @@ const API1 = 'https://api.pipedrive.com/v1';
 const API2 = 'https://api.pipedrive.com/api/v2';
 const SUBJECT_PREFIX = 'Holiday:';
 const COLORS = ['#2563eb','#059669','#db2777','#d97706','#7c3aed','#ea580c','#0891b2','#65a30d','#dc2626','#4338ca','#0369a1','#15803d'];
-// Per-user default country: PD user ID -> country code
-const USER_COUNTRY_MAP = {
-  25517163: 'ES-CAT'  // Alessandro Ribas -> Spain (Catalonia)
-};
+
 
 let TOKEN = '';
 let year = new Date().getFullYear();
@@ -456,8 +453,7 @@ const BH_DATA = {
   RS: { name:'Serbia', fixed:{'01-01':'Nova godina','01-02':'Nova godina','01-07':'Božić','02-15':'Dan državnosti','02-16':'Dan državnosti','05-01':'Praznik rada','05-02':'Praznik rada','11-11':'Dan primirja','12-25':'Katolički Božić'}, orthodoxEaster:true },
   GB: { name:'United Kingdom', fixed:{'01-01':'New Year\'s Day','12-25':'Christmas Day','12-26':'Boxing Day'}, easter:true, easterMon:true, mayBH:true, springBH:true, summerBH:true },
   DE: { name:'Germany', fixed:{'01-01':'Neujahr','05-01':'Tag der Arbeit','10-03':'Deutsche Einheit','12-25':'1. Weihnachtstag','12-26':'2. Weihnachtstag'}, easter:true, easterMon:true, ascension:true, whit:true },
-  ES: { name:'Spain', fixed:{'01-01':'Año Nuevo','01-06':'Reyes Magos','05-01':'Día del Trabajo','08-15':'Asunción','10-12':'Día de la Hispanidad','11-01':'Todos los Santos','12-06':'Día de la Constitución','12-08':'Inmaculada Concepción','12-25':'Navidad'}, easter:true },
-  'ES-CAT': { name:'Spain (Catalonia)', fixed:{'01-01':'Año Nuevo','01-06':'Reyes Magos','05-01':'Día del Trabajo','06-24':'Sant Joan','08-15':'Asunción','09-11':'Diada de Catalunya','10-12':'Día de la Hispanidad','11-01':'Todos los Santos','12-06':'Día de la Constitución','12-08':'Inmaculada Concepción','12-25':'Navidad','12-26':'Sant Esteve'}, easter:true, easterMon:true },
+  ES: { name:'Spain', fixed:{'01-01':'Año Nuevo','01-06':'Reyes Magos','05-01':'Día del Trabajo','06-24':'Sant Joan','08-15':'Asunción','09-11':'Diada de Catalunya','10-12':'Día de la Hispanidad','11-01':'Todos los Santos','12-06':'Día de la Constitución','12-08':'Inmaculada Concepción','12-25':'Navidad','12-26':'Sant Esteve'}, easter:true, easterMon:true },
   IT: { name:'Italy', fixed:{'01-01':'Capodanno','01-06':'Epifania','04-25':'Liberazione','05-01':'Festa del Lavoro','06-02':'Repubblica','08-15':'Ferragosto','11-01':'Ognissanti','12-08':'Immacolata','12-25':'Natale','12-26':'S. Stefano'}, easter:true, easterMon:true },
   GR: { name:'Greece', fixed:{'01-01':'Πρωτοχρονιά','01-06':'Θεοφάνεια','03-25':'Εθνική Εορτή','05-01':'Εργατική Πρωτομαγιά','08-15':'Κοίμηση','10-28':'Ημέρα Όχι','12-25':'Χριστούγεννα','12-26':'Σύναξη'}, orthodoxEaster:true, orthodoxEasterMon:true, cleanMonday:true, holySpiritMon:true },
   TR: { name:'Turkey', fixed:{'01-01':'Yılbaşı','04-23':'Ulusal Egemenlik','05-01':'Emek Bayramı','05-19':'Atatürkü Anma','07-15':'Demokrasi Bayramı','08-30':'Zafer Bayramı','10-29':'Cumhuriyet Bayramı'} },
@@ -614,24 +610,7 @@ async function init(tok) {
     document.getElementById('setup-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('me-badge').textContent = me.data.name;
-    // Apply per-user country default if defined
-    if (USER_COUNTRY_MAP[meId]) {
-      const userCountry = USER_COUNTRY_MAP[meId];
-      // Find the base country option and replace it with the user-specific one
-      const baseCode = userCountry.split('-')[0]; // e.g. 'ES' from 'ES-CAT'
-      const mainSel = document.getElementById('country-sel');
-      const baseOpt = mainSel.querySelector(`option[value="${baseCode}"]`);
-      if (baseOpt) { baseOpt.value = userCountry; baseOpt.textContent = BH_DATA[userCountry]?.name || userCountry; }
-      const syncSel = document.getElementById('sync-country');
-      if (syncSel) {
-        const syncOpt = syncSel.querySelector(`option[value="${baseCode}"]`);
-        if (syncOpt) { syncOpt.value = userCountry; syncOpt.textContent = BH_DATA[userCountry]?.name || userCountry; }
-      }
-      country = userCountry;
-      localStorage.setItem(COUNTRY_KEY, country);
-      mainSel.value = country;
-      if (syncSel) syncSel.value = country;
-    }
+
     await loadPeople();
   } catch (e) {
     TOKEN = '';
