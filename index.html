@@ -188,7 +188,6 @@
           <option value="GB">United Kingdom</option>
           <option value="DE">Germany</option>
           <option value="ES">Spain</option>
-          <option value="ES-CAT">Spain (Catalonia)</option>
           <option value="IT">Italy</option>
           <option value="GR">Greece</option>
           <option value="TR">Turkey</option>
@@ -215,7 +214,6 @@
             <option value="GB">United Kingdom</option>
             <option value="DE">Germany</option>
             <option value="ES">Spain</option>
-            <option value="ES-CAT">Spain (Catalonia)</option>
             <option value="IT">Italy</option>
             <option value="GR">Greece</option>
             <option value="TR">Turkey</option>
@@ -618,11 +616,21 @@ async function init(tok) {
     document.getElementById('me-badge').textContent = me.data.name;
     // Apply per-user country default if defined
     if (USER_COUNTRY_MAP[meId]) {
-      country = USER_COUNTRY_MAP[meId];
+      const userCountry = USER_COUNTRY_MAP[meId];
+      // Find the base country option and replace it with the user-specific one
+      const baseCode = userCountry.split('-')[0]; // e.g. 'ES' from 'ES-CAT'
+      const mainSel = document.getElementById('country-sel');
+      const baseOpt = mainSel.querySelector(`option[value="${baseCode}"]`);
+      if (baseOpt) { baseOpt.value = userCountry; baseOpt.textContent = BH_DATA[userCountry]?.name || userCountry; }
+      const syncSel = document.getElementById('sync-country');
+      if (syncSel) {
+        const syncOpt = syncSel.querySelector(`option[value="${baseCode}"]`);
+        if (syncOpt) { syncOpt.value = userCountry; syncOpt.textContent = BH_DATA[userCountry]?.name || userCountry; }
+      }
+      country = userCountry;
       localStorage.setItem(COUNTRY_KEY, country);
-      document.getElementById('country-sel').value = country;
-      const syncC = document.getElementById('sync-country');
-      if (syncC) syncC.value = country;
+      mainSel.value = country;
+      if (syncSel) syncSel.value = country;
     }
     await loadPeople();
   } catch (e) {
